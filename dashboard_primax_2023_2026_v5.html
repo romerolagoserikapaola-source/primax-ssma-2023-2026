@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard Ejecutivo SSMA 2023–2026 · PRIMAX</title>
+
+<!-- Plotly.js -->
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
+<!-- SheetJS -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" charset="utf-8"></script>
+
+<style>
+  :root{
+    --primax-blue-900:#00284F;
+    --primax-blue-800:#003A70;
+    --primax-blue-700:#0A4D8C;
+    --primax-blue-500:#1D6FA8;
+    --primax-blue-300:#5B9BC9;
+    --primax-orange:#F58220;
+    --primax-orange-soft:#FDF0E6;
+    --gray-900:#1F2937;
+    --gray-700:#4B5563;
+    --gray-500:#6B7280;
+    --gray-200:#E4E7EC;
+    --gray-100:#F5F6F8;
+    --white:#FFFFFF;
+    --shadow-sm:0 2px 6px rgba(15,35,60,.06);
+    --shadow-md:0 10px 24px rgba(15,35,60,.10);
+    --shadow-lg:0 18px 40px rgba(0,40,80,.18);
+    --radius:16px;
+    --radius-lg:22px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+    background:var(--gray-100);
+    color:var(--gray-900);
+    -webkit-font-smoothing:antialiased;
+  }
+  button{font-family:inherit;cursor:pointer;border:none;background:none;}
+  select{font-family:inherit;}
+
+  /* ---------- TOPBAR ---------- */
+  .topbar{
+    background:linear-gradient(90deg,var(--primax-blue-900) 0%,var(--primax-blue-800) 55%,var(--primax-blue-700) 100%);
+    color:var(--white);
+    padding:12px 32px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    border-bottom:3px solid var(--primax-orange);
+    position:sticky;
+    top:0;
+    z-index:200;
+  }
+  .brand{ display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+  
+  /* Logo SVG (Letras blancas, símbolo naranja) */
+  .primax-logo-svg {
+    height: 38px;
+    width: auto;
+    display: block;
+  }
+
+  .brand-badge{
+    background:var(--primax-orange); color:var(--white);
+    padding:3px 9px; font-size:11px; font-weight:700;
+    border-radius:6px; letter-spacing:.6px;
+  }
+  .topbar-actions{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  
+  .upload-btn{
+    display:inline-flex; align-items:center; gap:8px;
+    background:var(--primax-orange); color:var(--white);
+    padding:9px 16px; border-radius:10px;
+    font-size:13px; font-weight:600; transition:all .2s ease;
+  }
+  .upload-btn:hover{ background:#e0721a; transform:translateY(-1px); box-shadow:0 6px 14px rgba(245,130,32,.35); }
+  .upload-btn svg{ width:16px; height:16px; }
+
+  /* ---------- LAYOUT ---------- */
+  .screen{ display:none; padding:28px 32px 48px; max-width:1440px; margin:0 auto; }
+  .screen.active{ display:block; animation:fadeIn .35s ease; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  /* ---------- HOME ---------- */
+  .hero{
+    background:linear-gradient(135deg,var(--primax-blue-900) 0%,var(--primax-blue-800) 55%,var(--primax-blue-700) 100%);
+    border-radius:var(--radius-lg);
+    padding:52px 44px; color:var(--white);
+    position:relative; overflow:hidden;
+    box-shadow:var(--shadow-md);
+    text-align:center;
+  }
+  .hero::after{
+    content:''; position:absolute; right:-100px; top:-100px;
+    width:380px; height:380px;
+    background:radial-gradient(circle,rgba(245,130,32,.45) 0%,rgba(245,130,32,0) 70%);
+    border-radius:50%;
+  }
+  .hero::before{
+    content:''; position:absolute; left:-80px; bottom:-120px;
+    width:280px; height:280px;
+    background:radial-gradient(circle,rgba(29,111,168,.55) 0%,rgba(29,111,168,0) 70%);
+    border-radius:50%;
+  }
+  .hero h1{
+    margin:0; font-size:38px; font-weight:800;
+    letter-spacing:.3px; position:relative; z-index:2;
+  }
+
+  .module-grid{
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:24px; margin-top:28px;
+  }
+  .module-card{
+    background:var(--white); border-radius:var(--radius-lg);
+    padding:36px 32px; border:1px solid var(--gray-200);
+    text-align:left; cursor:pointer; transition:all .28s ease;
+    position:relative; overflow:hidden;
+    display:flex; flex-direction:column; gap:14px;
+    box-shadow:var(--shadow-sm);
+  }
+  .module-card::before{
+    content:''; position:absolute;
+    top:0; left:0; right:0; height:5px;
+    background:linear-gradient(90deg,var(--primax-blue-800),var(--primax-orange));
+  }
+  .module-card:hover{
+    transform:translateY(-6px);
+    box-shadow:var(--shadow-lg);
+    border-color:var(--primax-blue-800);
+  }
+  .module-icon{
+    width:56px; height:56px; border-radius:14px;
+    background:linear-gradient(135deg,var(--primax-blue-800),var(--primax-blue-500));
+    display:flex; align-items:center; justify-content:center; color:var(--white);
+  }
+  .module-icon svg{ width:28px; height:28px; }
+  .module-card h2{ margin:0; font-size:24px; font-weight:800; color:var(--primax-blue-900); }
+  .module-card p{ margin:0; color:var(--gray-700); font-size:15px; font-weight:600; }
+  .module-cta{
+    margin-top:auto; color:var(--primax-orange);
+    font-weight:700; font-size:14px;
+    display:inline-flex; align-items:center; gap:8px;
+  }
+  .module-cta svg{ width:16px; height:16px; transition:transform .2s; }
+  .module-card:hover .module-cta svg{ transform:translateX(4px); }
+
+  /* ---------- MODULE HEADER ---------- */
+  .module-header{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:20px; margin-bottom:16px; flex-wrap:wrap;
+  }
+  .back-btn{
+    display:inline-flex; align-items:center; gap:8px;
+    background:var(--white); color:var(--primax-blue-800);
+    border:1px solid var(--gray-200);
+    padding:10px 18px; border-radius:10px;
+    font-size:14px; font-weight:600;
+    transition:all .2s; box-shadow:var(--shadow-sm);
+  }
+  .back-btn:hover{ border-color:var(--primax-blue-800); background:var(--gray-100); }
+  .module-title h2{ margin:0; font-size:26px; font-weight:800; color:var(--primax-blue-900); }
+
+  /* ---------- CONTROLS BAR ---------- */
+  .controls-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--white);
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    border: 1px solid var(--gray-200);
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    box-shadow: var(--shadow-sm);
+  }
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .control-group label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primax-blue-900);
+  }
+  .select-control {
+    appearance: none;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 8px 34px 8px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primax-blue-900);
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23003A70' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px;
+    cursor: pointer;
+    outline: none;
+  }
+  .select-control:focus { outline: 2px solid var(--primax-blue-300); }
+
+  /* ---------- KPI ---------- */
+  .kpi-grid{
+    display:grid; grid-template-columns:repeat(4,1fr);
+    gap:16px; margin-bottom:22px;
+  }
+  .kpi{
+    background:var(--white); border-radius:var(--radius);
+    padding:20px 22px; border:1px solid var(--gray-200);
+    box-shadow:var(--shadow-sm);
+    position:relative; overflow:hidden;
+  }
+  .kpi::before{
+    content:''; position:absolute; left:0; top:0; bottom:0; width:4px;
+    background:linear-gradient(180deg,var(--primax-blue-800),var(--primax-orange));
+  }
+  .kpi-label{
+    font-size:12.5px; font-weight:700; color:var(--gray-500);
+    text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px;
+  }
+  .kpi-value{
+    font-size:32px; font-weight:800; color:var(--primax-blue-900);
+    line-height:1.1; margin-bottom:6px;
+  }
+  .kpi-sub{ font-size:13px; color:var(--gray-700); margin-bottom:4px; font-weight:600;}
+
+  /* ---------- CHARTS ---------- */
+  .charts-grid{
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:20px; margin-bottom:22px;
+  }
+  .card{
+    background:var(--white); border-radius:var(--radius);
+    padding:22px 24px; border:1px solid var(--gray-200);
+    box-shadow:var(--shadow-sm);
+  }
+  .card-head{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px; margin-bottom:14px; flex-wrap:wrap;
+  }
+  .card-head h3{
+    margin:0; font-size:15px; font-weight:700;
+    color:var(--primax-blue-900); letter-spacing:.2px;
+  }
+  .chart-wrap{ position:relative; height:360px; }
+  .chart-wrap.small{ height:240px; }
+  .plotly-div{ width:100%; height:100%; }
+  
+  .cultural-grid{
+    display:grid; grid-template-columns:repeat(3,1fr);
+    gap:18px; margin-bottom:22px;
+  }
+
+  /* ---------- TABLES ---------- */
+  .table-wrap{ overflow-x:auto; }
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  thead th{
+    text-align:left; padding:12px 14px;
+    background:var(--gray-100); color:var(--gray-700);
+    font-weight:700; font-size:12px; letter-spacing:.4px;
+    text-transform:uppercase;
+    border-bottom:2px solid var(--gray-200);
+    white-space:nowrap;
+  }
+  tbody td{
+    padding:11px 14px; border-bottom:1px solid var(--gray-200);
+    color:var(--gray-900);
+  }
+  tbody tr:hover{ background:#FAFBFC; }
+  tbody td.num{ text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+  tbody td.num.highlight{
+    color:var(--primax-orange); font-weight:800;
+    background:var(--primax-orange-soft);
+  }
+
+  /* ---------- TABS ---------- */
+  .tabs{
+    display:inline-flex; background:var(--white);
+    border:1px solid var(--gray-200); border-radius:12px;
+    padding:5px; gap:4px; box-shadow:var(--shadow-sm); flex-wrap:wrap;
+  }
+  .tab{
+    padding:10px 20px; border-radius:9px;
+    font-size:14px; font-weight:700; color:var(--gray-500);
+    transition:all .18s;
+    display:flex; flex-direction:column; align-items:flex-start; line-height:1.25;
+  }
+  .tab small{ font-size:11px; font-weight:500; color:var(--gray-500); }
+  .tab:hover{ background:var(--gray-100); color:var(--primax-blue-800); }
+  .tab.active{
+    background:linear-gradient(135deg,var(--primax-blue-800),var(--primax-blue-700));
+    color:var(--white);
+  }
+  .tab.active small{ color:rgba(255,255,255,.75); }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width:1100px){
+    .kpi-grid{ grid-template-columns:repeat(2,1fr); }
+    .charts-grid{ grid-template-columns:1fr; }
+    .cultural-grid{ grid-template-columns:1fr; }
+    .module-grid{ grid-template-columns:1fr; }
+  }
+  @media (max-width:640px){
+    .topbar{ padding:12px 16px; flex-wrap:wrap; }
+    .screen{ padding:18px 16px 36px; }
+    .hero{ padding:36px 24px; }
+    .hero h1{ font-size:26px; }
+    .kpi-grid{ grid-template-columns:1fr; }
+    .module-card{ padding:26px 22px; }
+    .topbar-actions { width: 100%; justify-content: space-between; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= TOPBAR ================= -->
+<header class="topbar">
+  <div class="brand">
+    <!-- Logo PRIMAX: Texto blanco, Símbolo naranja -->
+    <svg class="primax-logo-svg" viewBox="0 0 320 60" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 38.5,2 C 55,1 72,7 78,20 C 81,26 70,42 58,50 C 45,58 25,60 10,52 C 2,48 0,35 5,25 C 12,12 25,3 38.5,2 Z M 45,14 C 32,15 18,25 12,38 C 18,44 32,46 42,40 C 50,35 53,22 45,14 Z" fill="#F58220" />
+      <text x="90" y="48" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="46" fill="#FFFFFF" letter-spacing="1">PRIMAX</text>
+    </svg>
+    <span class="brand-badge">SSMA</span>
+  </div>
+  
+  <div class="topbar-actions">
+    <button class="upload-btn" id="btnUpload" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Actualizar datos (Excel)
+    </button>
+    <input type="file" id="excelInput" accept=".xlsx,.xls" hidden />
+  </div>
+</header>
+
+<!-- ================= HOME ================= -->
+<section id="screen-home" class="screen active">
+  <div class="hero">
+    <h1>Dashboard Ejecutivo SSMA 2023–2026</h1>
+  </div>
+
+  <div class="module-grid">
+    <button class="module-card" type="button" onclick="navigate('historico')">
+      <div class="module-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3v18h18"/>
+          <polyline points="7 15 11 11 15 14 20 8"/>
+        </svg>
+      </div>
+      <h2>Histórico SSMA</h2>
+      <p>TRIR · AARkm · UPRR</p>
+      <span class="module-cta">
+        Ingresar al módulo
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </span>
+    </button>
+
+    <button class="module-card" type="button" onclick="navigate('cultural')">
+      <div class="module-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <h2>RoadMap Cultural 2030</h2>
+      <p>Reportes SSMA · Gemba Walk · Horas de coaching</p>
+      <span class="module-cta">
+        Ingresar al módulo
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </span>
+    </button>
+  </div>
+</section>
+
+<!-- ================= HISTÓRICO SSMA ================= -->
+<section id="screen-historico" class="screen">
+  <div class="module-header">
+    <button class="back-btn" type="button" onclick="navigate('home')">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Volver al inicio
+    </button>
+    <div class="module-title" style="flex:1;min-width:240px;">
+      <h2>Histórico SSMA 2023–2026</h2>
+    </div>
+    <div class="tabs" id="tabs-historico">
+      <button class="tab active" data-ind="trir" type="button">TRIR<small>Accidentes laborales</small></button>
+      <button class="tab" data-ind="aar" type="button">AARkm<small>Accidentabilidad vehicular</small></button>
+      <button class="tab" data-ind="upr" type="button">UPRR<small>Derrames</small></button>
+    </div>
+  </div>
+
+  <!-- Controles para Histórico -->
+  <div class="controls-bar">
+    <div class="control-group">
+      <label for="histYearSelect">Año KPI:</label>
+      <select id="histYearSelect" class="select-control">
+        <option value="2023">2023</option>
+        <option value="2024">2024</option>
+        <option value="2025">2025</option>
+        <option value="2026 YTD" selected>2026 YTD</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label for="histUnitSelect">Unidad Organizacional (Gráficos):</label>
+      <select id="histUnitSelect" class="select-control">
+        <option value="primax" selected>PRIMAX Perú — Consolidado nacional</option>
+        <option value="negocios">Gerencia de Negocios Perú</option>
+        <option value="clientes">Gerencia Corporativa de Clientes y Nuevos Negocios</option>
+        <option value="supply">Gerencia Corporativa de Supply Chain</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="kpi-grid" id="kpi-historico"></div>
+
+  <div class="charts-grid">
+    <div class="card">
+      <div class="card-head">
+        <h3 id="evol-title">Evolución Histórica</h3>
+      </div>
+      <div class="chart-wrap"><div id="chartEvol" class="plotly-div"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <h3 id="mr-title">META vs REAL</h3>
+      </div>
+      <div class="chart-wrap"><div id="chartMetaReal" class="plotly-div"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ROADMAP CULTURAL ================= -->
+<section id="screen-cultural" class="screen">
+  <div class="module-header">
+    <button class="back-btn" type="button" onclick="navigate('home')">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Volver al inicio
+    </button>
+    <div class="module-title" style="flex:1;min-width:240px;">
+      <h2>RoadMap Cultural 2030</h2>
+    </div>
+  </div>
+
+  <!-- Controles para Cultural -->
+  <div class="controls-bar">
+    <div class="control-group">
+      <label for="cultYearSelect">Año KPI:</label>
+      <select id="cultYearSelect" class="select-control">
+        <option value="2023">2023</option>
+        <option value="2024">2024</option>
+        <option value="2025">2025</option>
+        <option value="2026 YTD" selected>2026 YTD</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="kpi-grid" id="kpi-cultural" style="grid-template-columns:repeat(3,1fr);"></div>
+
+  <div class="cultural-grid">
+    <div class="card">
+      <div class="card-head"><h3>N° DE REPORTES SSMA (PRIMAX SAFE)</h3></div>
+      <div class="chart-wrap small"><div id="chartReportes" class="plotly-div"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>N° DE VISITAS DE LIDERAZGO</h3></div>
+      <div class="chart-wrap small"><div id="chartGemba" class="plotly-div"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>N° DE HORAS DE COACHING</h3></div>
+      <div class="chart-wrap small"><div id="chartCoaching" class="plotly-div"></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h3>Resultados históricos del RoadMap Cultural</h3>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Indicador cultural</th>
+            <th style="text-align:right;">2023</th>
+            <th style="text-align:right;">2024</th>
+            <th style="text-align:right;">2025</th>
+            <th style="text-align:right;">2026 YTD</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-growth"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<script>
+/* =========================================================
+   DATA (fuente: paola 06.11.26 Libro2.xlsx)
+   ========================================================= */
+const UNITS_META = {
+  primax:    { label:'PRIMAX Perú',                                   sub:'Consolidado nacional' },
+  negocios:  { label:'Gerencia de Negocios Perú',                     sub:'' },
+  clientes:  { label:'Gerencia Corp. de Clientes y Nuevos Negocios',  sub:'' },
+  supply:    { label:'Gerencia Corp. de Supply Chain',                sub:'' }
+};
+const UNIT_ORDER  = ['primax','negocios','clientes','supply'];
+const UNIT_COLORS = {
+  primax:   '#00284F',
+  negocios: '#0A4D8C',
+  clientes: '#1D6FA8',
+  supply:   '#5B9BC9'
+};
+const INDICADORES = {
+  trir:{ label:'TRIR',  desc:'Accidentes laborales',       meta:'trirM', real:'trirR' },
+  aar: { label:'AARkm', desc:'Accidentabilidad vehicular', meta:'aarM',  real:'aarR'  },
+  upr: { label:'UPRR',  desc:'Derrames',                   meta:'uprM',  real:'uprR'  }
+};
+const YEARS = ['2023','2024','2025','2026 YTD'];
+
+let DATA = {
+  historico: {
+    primax: [
+      { year:'2023',     trirM:4.47, trirR:6.29, aarM:0.51, aarR:1.74, uprM:2.15, uprR:2.48 },
+      { year:'2024',     trirM:4.47, trirR:4.70, aarM:0.51, aarR:0.07, uprM:2.15, uprR:0.34 },
+      { year:'2025',     trirM:4.47, trirR:3.94, aarM:0.51, aarR:0.25, uprM:2.15, uprR:0.36 },
+      { year:'2026 YTD', trirM:4.99, trirR:4.20, aarM:0.51, aarR:0.32, uprM:2.15, uprR:0.02 }
+    ],
+    negocios: [
+      { year:'2023',     trirM:5.69, trirR:7.25, aarM:0.51, aarR:5.48, uprM:1.02,  uprR:0.75  },
+      { year:'2024',     trirM:5.69, trirR:5.99, aarM:0.51, aarR:0.00, uprM:1.02,  uprR:0.40  },
+      { year:'2025',     trirM:5.69, trirR:4.36, aarM:0.51, aarR:1.77, uprM:1.02,  uprR:0.31  },
+      { year:'2026 YTD', trirM:5.74, trirR:5.20, aarM:1.08, aarR:0.00, uprM:0.035, uprR:0.029 }
+    ],
+    clientes: [
+      { year:'2023',     trirM:1.65, trirR:2.02, aarM:0.51, aarR:7.22, uprM:1.05,  uprR:0.75 },
+      { year:'2024',     trirM:1.65, trirR:1.74, aarM:0.51, aarR:0.00, uprM:1.05,  uprR:0.40 },
+      { year:'2025',     trirM:1.65, trirR:2.46, aarM:0.51, aarR:0.00, uprM:1.05,  uprR:0.00 },
+      { year:'2026 YTD', trirM:1.01, trirR:1.37, aarM:0.00, aarR:0.00, uprM:0.047, uprR:0.01 }
+    ],
+    supply: [
+      { year:'2023',     trirM:0.60, trirR:1.24, aarM:0.51, aarR:0.57, uprM:4.75, uprR:0.00 },
+      { year:'2024',     trirM:0.60, trirR:0.66, aarM:0.51, aarR:0.09, uprM:4.75, uprR:0.21 },
+      { year:'2025',     trirM:0.60, trirR:2.55, aarM:0.51, aarR:0.11, uprM:4.75, uprR:0.23 },
+      { year:'2026 YTD', trirM:2.14, trirR:1.33, aarM:0.10, aarR:0.36, uprM:4.41, uprR:0.01 }
+    ]
+  },
+  cultural: {
+    reportes: [180, 478, 4500, 8892],
+    gemba:    [60, 150, 392, 298],
+    coaching: [0, 0, 520, 476]
+  }
+};
+
+/* =========================================================
+   STATE
+   ========================================================= */
+const state = { 
+  screen: 'home', 
+  indicador: 'trir', 
+  histUnit: 'primax',
+  histYear: '2026 YTD',
+  cultYear: '2026 YTD'
+};
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+function fmt(v){
+  if (v === null || v === undefined || isNaN(v)) return '—';
+  // Redondeo a 2 decimales exactos para TRIR, AARkm, UPRR
+  return Number(v).toLocaleString('es-PE',{ minimumFractionDigits:2, maximumFractionDigits:2 });
+}
+function fmtInt(v){
+  if (v === null || v === undefined || isNaN(v)) return '—';
+  // Enteros con separador de miles para cultura
+  return Number(v).toLocaleString('es-PE');
+}
+
+/* Common Plotly layout */
+const PLOTLY_FONT = { family:"'Segoe UI', Roboto, Arial, sans-serif", size:11.5, color:'#4B5563' };
+function baseLayout(extra){
+  return Object.assign({
+    margin:{ l:52, r:16, t:40, b:52 },
+    paper_bgcolor:'rgba(0,0,0,0)',
+    plot_bgcolor:'rgba(0,0,0,0)',
+    font:PLOTLY_FONT,
+    xaxis:{
+      type: 'category', // Eje X como categoría exacta
+      gridcolor:'rgba(0,0,0,0)',
+      linecolor:'#E4E7EC',
+      tickfont:{ color:'#00284F', size:12, family:PLOTLY_FONT.family, weight:'bold' },
+      zeroline:false
+    },
+    yaxis:{
+      gridcolor:'#EEF1F4',
+      linecolor:'#E4E7EC',
+      tickfont:{ color:'#6B7280', size:11, family:PLOTLY_FONT.family },
+      zeroline:false
+    },
+    showlegend:false
+  }, extra || {});
+}
+const PLOTLY_CONFIG = {
+  responsive:true,
+  displayModeBar:'hover',
+  displaylogo:false,
+  modeBarButtonsToRemove:[
+    'select2d','lasso2d','autoScale2d','toggleSpikelines',
+    'hoverCompareCartesian','hoverClosestCartesian'
+  ]
+};
+function drawPlot(id, data, layout){
+  const el = document.getElementById(id);
+  if (!el) return;
+  Plotly.react(el, data, layout, PLOTLY_CONFIG);
+}
+
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
+function navigate(screen){
+  state.screen = screen;
+  document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+  const target = document.getElementById('screen-' + screen);
+  if (target) target.classList.add('active');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (screen === 'historico') renderHistorico();
+      if (screen === 'cultural')  renderCultural();
+    });
+  });
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+/* =========================================================
+   HISTÓRICO RENDER
+   ========================================================= */
+function renderHistorico(){
+  const ind = INDICADORES[state.indicador];
+  const selectedYear = state.histYear;
+  const selectedUnit = state.histUnit;
+
+  document.querySelectorAll('#tabs-historico .tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.ind === state.indicador);
+  });
+
+  // 1. KPI Cards (Todas las unidades para el año seleccionado)
+  const kpiWrap = document.getElementById('kpi-historico');
+  kpiWrap.innerHTML = UNIT_ORDER.map(u => {
+    const rows = DATA.historico[u] || [];
+    const row = rows.find(r => r.year === selectedYear) || {};
+    const real = row[ind.real];
+    const meta = row[ind.meta];
+    const unitShort = UNITS_META[u].label.replace('Gerencia Corp. de ','').replace('Gerencia de ','');
+    
+    return `
+      <div class="kpi">
+        <div class="kpi-label">${unitShort}</div>
+        <div class="kpi-value">${fmt(real)}</div>
+        <div class="kpi-sub">META: ${fmt(meta)}</div>
+      </div>`;
+  }).join('');
+
+  // 2. Títulos dinámicos
+  document.getElementById('evol-title').textContent = `Evolución Histórica — ${ind.label} (${UNITS_META[selectedUnit].label})`;
+  document.getElementById('mr-title').textContent   = `META vs REAL — ${ind.label} (${UNITS_META[selectedUnit].label})`;
+
+  renderChartEvol(ind);
+  renderChartMetaReal(ind);
+}
+
+function renderChartEvol(ind){
+  const unit = state.histUnit;
+  const rows = YEARS.map(y => (DATA.historico[unit] || []).find(r => r.year === y) || {});
+  
+  const metas = rows.map(r => r[ind.meta]);
+  const reales= rows.map(r => r[ind.real]);
+
+  const traces = [
+    {
+      x:YEARS, y:reales, type:'scatter', mode:'lines+markers+text', name:'REAL',
+      text: reales.map(v => `<b>${fmt(v)}</b>`),
+      textposition: 'top center',
+      textfont: { size: 12, color: '#00284F' },
+      cliponaxis: false,
+      line:{ color:'#00284F', width:3, shape:'spline' },
+      marker:{ size:10, color:'#ffffff', line:{ width:3, color:'#00284F' } },
+      hovertemplate:'<b>REAL</b><br>%{x}: %{y:.2f}<extra></extra>'
+    },
+    {
+      x:YEARS, y:metas, type:'scatter', mode:'lines+markers+text', name:'META',
+      text: metas.map(v => `${fmt(v)}`),
+      textposition: 'bottom center',
+      textfont: { size: 11, color: '#F58220' },
+      cliponaxis: false,
+      line:{ color:'#F58220', width:2, dash:'dot' },
+      marker:{ size:8, color:'#F58220', symbol:'diamond' },
+      hovertemplate:'<b>META</b><br>%{x}: %{y:.2f}<extra></extra>'
+    }
+  ];
+
+  const layout = baseLayout({
+    showlegend:true,
+    margin:{ l:50, r:30, t:50, b:50 },
+    legend:{
+      orientation:'h', x:0.5, y:1.15, xanchor:'center', yanchor:'top',
+      font:{ family:PLOTLY_FONT.family, size:12, color:'#4B5563' },
+      bgcolor:'rgba(0,0,0,0)'
+    },
+    yaxis:Object.assign({}, baseLayout().yaxis, { rangemode:'tozero' })
+  });
+
+  drawPlot('chartEvol', traces, layout);
+}
+
+function renderChartMetaReal(ind){
+  const unit = state.histUnit;
+  const rows = YEARS.map(y => (DATA.historico[unit] || []).find(r => r.year === y) || {});
+  const metas = rows.map(r => r[ind.meta]);
+  const reales= rows.map(r => r[ind.real]);
+
+  const traces = [
+    {
+      x:YEARS, y:metas, type:'bar', name:'META',
+      text: metas.map(v => `<b>${fmt(v)}</b>`),
+      textposition: 'outside',
+      textfont: { size: 12, color: '#6B7280' },
+      cliponaxis: false,
+      marker:{ color:'#E4E7EC' },
+      hovertemplate:'<b>META</b><br>%{x}: %{y:.2f}<extra></extra>'
+    },
+    {
+      x:YEARS, y:reales, type:'bar', name:'REAL',
+      text: reales.map(v => `<b>${fmt(v)}</b>`),
+      textposition: 'outside',
+      textfont: { size: 12, color: '#00284F' },
+      cliponaxis: false,
+      marker:{ color:'#00284F' },
+      hovertemplate:'<b>REAL</b><br>%{x}: %{y:.2f}<extra></extra>'
+    }
+  ];
+
+  const layout = baseLayout({
+    barmode:'group',
+    bargap:0.35,
+    bargroupgap:0.1,
+    showlegend:true,
+    margin:{ l:50, r:30, t:50, b:50 },
+    legend:{
+      orientation:'h', x:0.5, y:1.15, xanchor:'center', yanchor:'top',
+      font:{ family:PLOTLY_FONT.family, size:12, color:'#4B5563' },
+      bgcolor:'rgba(0,0,0,0)'
+    },
+    yaxis:Object.assign({}, baseLayout().yaxis, { rangemode:'tozero' })
+  });
+
+  drawPlot('chartMetaReal', traces, layout);
+}
+
+/* =========================================================
+   CULTURAL RENDER
+   ========================================================= */
+function renderCultural(){
+  const selectedYear = state.cultYear;
+  const yearIndex = YEARS.indexOf(selectedYear);
+
+  const rep = DATA.cultural.reportes;
+  const gem = DATA.cultural.gemba;
+  const coa = DATA.cultural.coaching;
+
+  // KPIs con los nombres exactos solicitados
+  const kpi = document.getElementById('kpi-cultural');
+  const createKpiCard = (label, dataArr, idx) => {
+    return `
+      <div class="kpi">
+        <div class="kpi-label">${label}</div>
+        <div class="kpi-value">${fmtInt(dataArr[idx])}</div>
+        <div class="kpi-sub">${selectedYear}</div>
+      </div>`;
+  };
+
+  kpi.innerHTML = 
+    createKpiCard('N° DE REPORTES SSMA (PRIMAX SAFE)', rep, yearIndex) +
+    createKpiCard('N° DE VISITAS DE LIDERAZGO', gem, yearIndex) +
+    createKpiCard('N° DE HORAS DE COACHING', coa, yearIndex);
+
+  renderBarCultural('chartReportes', 'N° DE REPORTES SSMA (PRIMAX SAFE)', rep);
+  renderBarCultural('chartGemba',   'N° DE VISITAS DE LIDERAZGO', gem);
+  renderBarCultural('chartCoaching','N° DE HORAS DE COACHING', coa);
+
+  renderGrowthTable();
+}
+
+function renderBarCultural(id, label, data){
+  const colors = data.map((_, i) => i === 3 ? '#F58220' : '#00284F');
+  const trace = [{
+    x:YEARS, 
+    y:data, 
+    type:'bar',
+    text: data.map(v => `<b>${fmtInt(v)}</b>`),
+    textposition: 'outside',
+    textfont: { size: 13, color: '#00284F' },
+    cliponaxis: false,
+    marker:{ color:colors, borderRadius: 4 },
+    hovertemplate:`<b>${label}</b><br>%{x}: %{y:,}<extra></extra>`
+  }];
+  
+  const layout = baseLayout({
+    bargap:0.45,
+    margin:{ l:46, r:16, t:40, b:40 },
+    yaxis:Object.assign({}, baseLayout().yaxis, { rangemode:'tozero' })
+  });
+  drawPlot(id, trace, layout);
+}
+
+function renderGrowthTable(){
+  // Nombres actualizados en la tabla para mantener consistencia
+  const rows = [
+    ['N° DE REPORTES SSMA (PRIMAX SAFE)', DATA.cultural.reportes],
+    ['N° DE VISITAS DE LIDERAZGO', DATA.cultural.gemba],
+    ['N° DE HORAS DE COACHING', DATA.cultural.coaching]
+  ];
+  const tbody = document.getElementById('tbody-growth');
+  tbody.innerHTML = rows.map(([label, arr]) => {
+    return `<tr>
+      <td>${label}</td>
+      <td class="num">${fmtInt(arr[0])}</td>
+      <td class="num">${fmtInt(arr[1])}</td>
+      <td class="num">${fmtInt(arr[2])}</td>
+      <td class="num highlight">${fmtInt(arr[3])}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* =========================================================
+   EVENT LISTENERS
+   ========================================================= */
+document.getElementById('histYearSelect').addEventListener('change', (e) => {
+  state.histYear = e.target.value;
+  renderHistorico();
+});
+document.getElementById('cultYearSelect').addEventListener('change', (e) => {
+  state.cultYear = e.target.value;
+  renderCultural();
+});
+
+document.getElementById('histUnitSelect').addEventListener('change', (e) => {
+  state.histUnit = e.target.value;
+  renderHistorico();
+});
+
+document.querySelectorAll('#tabs-historico .tab').forEach(t => {
+  t.addEventListener('click', () => {
+    state.indicador = t.dataset.ind;
+    renderHistorico();
+  });
+});
+
+/* =========================================================
+   EXCEL UPLOAD
+   ========================================================= */
+const btnUpload  = document.getElementById('btnUpload');
+const excelInput = document.getElementById('excelInput');
+
+btnUpload.addEventListener('click', () => excelInput.click());
+
+excelInput.addEventListener('change', async (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type:'array' });
+    const ok = parseAndLoadWorkbook(wb);
+    if (!ok) {
+      alert('El archivo se abrió, pero no se encontraron las hojas "HISTORICO SSMA" y/o "ROADMAP CULTURAL SSMA 2030". Se mantienen los datos actuales.');
+    } else {
+      alert('Datos actualizados correctamente desde el archivo Excel.');
+    }
+    if (state.screen === 'historico') renderHistorico();
+    if (state.screen === 'cultural')  renderCultural();
+  } catch (err) {
+    console.error(err);
+    alert('No se pudo leer el archivo. Detalle: ' + err.message);
+  } finally {
+    e.target.value = '';
+  }
+});
+
+function parseAndLoadWorkbook(wb){
+  const sheetNames = wb.SheetNames || [];
+  const normalize = s => String(s || '').trim().toUpperCase();
+  const findSheet = target => sheetNames.find(s => normalize(s) === normalize(target));
+
+  const histName = findSheet('HISTORICO SSMA');
+  const cultName = findSheet('ROADMAP CULTURAL SSMA 2030');
+
+  let loadedSomething = false;
+
+  /* ---- HISTÓRICO ---- */
+  if (histName){
+    const ws = wb.Sheets[histName];
+    const rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:null });
+    const parsed = { primax:[], negocios:[], clientes:[], supply:[] };
+    let currentUnit = null;
+
+    for (const row of rows){
+      if (!row || row.length === 0) continue;
+      const first = String(row[0] ?? '').trim();
+      const upper = first.toUpperCase();
+
+      if (upper.startsWith('PRIMAX PERÚ') || upper.startsWith('PRIMAX PERU')) { currentUnit = 'primax'; }
+      else if (upper.startsWith('GERENCIA DE NEGOCIOS')) { currentUnit = 'negocios'; }
+      else if (upper.includes('CLIENTES Y NUEVOS NEGOCIOS')) { currentUnit = 'clientes'; }
+      else if (upper.includes('SUPPLY CHAIN')) { currentUnit = 'supply'; }
+
+      if (currentUnit && /^\d{4}/.test(first)){
+        const ym = first.match(/^(\d{4})/);
+        const yearLabel = upper.includes('YTD') ? `${ym[1]} YTD` : ym[1];
+        const nums = [];
+        for (let i = 1; i < row.length; i++){
+          const v = row[i];
+          if (typeof v === 'number' && isFinite(v)) nums.push(v);
+        }
+        if (nums.length >= 6){
+          parsed[currentUnit].push({
+            year: yearLabel,
+            trirM: nums[0], trirR: nums[1],
+            aarM:  nums[2], aarR:  nums[3],
+            uprM:  nums[4], uprR:  nums[5]
+          });
+        }
+      }
+    }
+
+    let histOK = true;
+    for (const k of Object.keys(parsed)){
+      if (parsed[k].length >= 4) DATA.historico[k] = parsed[k];
+      else histOK = false;
+    }
+    if (histOK) loadedSomething = true;
+  }
+
+  /* ---- CULTURAL ---- */
+  if (cultName){
+    const ws = wb.Sheets[cultName];
+    const rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:null });
+    let cultOK = false;
+
+    for (const row of rows){
+      if (!row) continue;
+      const joined = row.map(c => String(c ?? '').toLowerCase()).join(' ');
+      const nums = row.filter(v => typeof v === 'number' && isFinite(v));
+      if (nums.length >= 4){
+        const tail = nums.slice(-4);
+        if (/reportes/.test(joined) && !/gemba|coaching/.test(joined)){
+          DATA.cultural.reportes = tail; cultOK = true;
+        } else if (/gemba/.test(joined)){
+          DATA.cultural.gemba = tail; cultOK = true;
+        } else if (/coaching/.test(joined)){
+          DATA.cultural.coaching = tail; cultOK = true;
+        }
+      }
+    }
+    if (cultOK) loadedSomething = true;
+  }
+
+  return loadedSomething;
+}
+</script>
+</body>
+</html>
